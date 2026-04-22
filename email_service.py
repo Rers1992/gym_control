@@ -4,7 +4,7 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 from settings_db import get_setting
 from database import get_alerta_enviada_hoy, registrar_alerta_enviada
-from database import obtener_membresias_por_vencer, obtener_cliente
+from database import obtener_membresias_por_vencer, obtener_cliente, obtener_tipo_membresia
 
 
 DIAS_AVISO = int(get_setting("dias_aviso_vencimiento", "3"))
@@ -44,13 +44,13 @@ def enviar_email_vencimiento(ignorar_limite=False):
 </tr>
 """.format(DIAS_AVISO)
 
-    from config import PLANES
     for m in membresias_por_vencer:
         cliente = obtener_cliente(m.cliente_rut)
         nombre_cliente = cliente.nombre if cliente else "Desconocido"
         dias = m.dias_restantes()
         fecha_fin = m.fecha_fin.strftime("%d/%m/%Y") if m.fecha_fin else "N/A"
-        plan_nombre = PLANES.get(m.plan, {}).get("nombre", m.plan)
+        tipo = obtener_tipo_membresia(m.plan)
+        plan_nombre = tipo.nombre if tipo else m.plan
 
         cuerpo += f"""
 <tr>

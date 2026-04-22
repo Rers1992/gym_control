@@ -2,12 +2,12 @@ import flet as ft
 from datetime import datetime, timedelta
 from database import (
     obtener_clientes, obtener_membresias, crear_membresia, actualizar_membresia,
-    eliminar_membresia, obtener_membresias_por_cliente, obtener_cliente,
+    eliminar_membresia, obtener_cliente,
     obtener_tipos_membresia, obtener_tipo_membresia, crear_tipo_membresia, actualizar_tipo_membresia,
     eliminar_tipo_membresia
 )
 from models import Membresia, TipoMembresia
-import config
+from settings_db import get_setting
 
 
 def membresias_page(page: ft.Page):
@@ -293,7 +293,8 @@ def membresias_page(page: ft.Page):
         for m in membresias:
             dias = m.dias_restantes()
             esta_vencida = dias is not None and dias < 0
-            esta_por_vencer = dias is not None and 0 <= dias <= config.DIAS_AVISO_VENCIMIENTO
+            dias_aviso = int(get_setting("dias_aviso_vencimiento", "3"))
+            esta_por_vencer = dias is not None and 0 <= dias <= dias_aviso
 
             if filtro == "activas" and (esta_vencida or not m.activa):
                 continue

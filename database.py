@@ -121,14 +121,6 @@ def obtener_membresias_por_cliente(cliente_rut):
     return [Membresia.from_dict(doc.id, doc.to_dict()) for doc in docs]
 
 
-def obtener_membresia(membresia_id):
-    from models import Membresia
-    doc = get_membresias_collection().document(membresia_id).get()
-    if doc.exists:
-        return Membresia.from_dict(doc.id, doc.to_dict())
-    return None
-
-
 def actualizar_membresia(membresia_id, datos: dict):
     get_membresias_collection().document(membresia_id).update(datos)
 
@@ -140,7 +132,9 @@ def eliminar_membresia(membresia_id):
 def obtener_membresias_activas():
     from models import Membresia
     docs = get_membresias_collection().where("activa", "==", True).stream()
-    return [Membresia.from_dict(doc.id, doc.to_dict()) for doc in docs]
+    membresias = [Membresia.from_dict(doc.id, doc.to_dict()) for doc in docs]
+    hoy = datetime.now()
+    return [m for m in membresias if m.fecha_fin is None or m.fecha_fin >= hoy]
 
 
 def obtener_membresias_por_vencer(dias=3):
@@ -149,19 +143,9 @@ def obtener_membresias_por_vencer(dias=3):
     membresias_activas = obtener_membresias_activas()
     por_vencer = []
     for m in membresias_activas:
-        if m.fecha_fin and m.fecha_fin <= fecha_limite:
+        if m.fecha_fin and m.fecha_fin >= hoy and m.fecha_fin <= fecha_limite:
             por_vencer.append(m)
     return por_vencer
-
-
-def obtener_membresias_vencidas():
-    hoy = datetime.now()
-    membresias_activas = obtener_membresias_activas()
-    vencidas = []
-    for m in membresias_activas:
-        if m.fecha_fin and m.fecha_fin < hoy:
-            vencidas.append(m)
-    return vencidas
 
 
 def registrar_asistencia(asistencia):
@@ -176,27 +160,6 @@ def obtener_asistencias():
     return [Asistencia.from_dict(doc.id, doc.to_dict()) for doc in docs]
 
 
-def obtener_asistencias_por_cliente(cliente_rut):
-    from models import Asistencia
-    cliente_rut = cliente_rut.replace(".", "").replace("-", "").upper() if cliente_rut else None
-    docs = get_asistencias_collection().where("cliente_rut", "==", cliente_rut).stream()
-    return [Asistencia.from_dict(doc.id, doc.to_dict()) for doc in docs]
-
-
-def obtener_asistencias_por_membresia(membresia_id):
-    from models import Asistencia
-    docs = get_asistencias_collection().where("membresia_id", "==", membresia_id).stream()
-    return [Asistencia.from_dict(doc.id, doc.to_dict()) for doc in docs]
-
-
-def obtener_asistencias_hoy():
-    from models import Asistencia
-    hoy_inicio = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    hoy_fin = hoy_inicio + timedelta(days=1)
-    docs = get_asistencias_collection().where("fecha", ">=", hoy_inicio).where("fecha", "<", hoy_fin).stream()
-    return [Asistencia.from_dict(doc.id, doc.to_dict()) for doc in docs]
-
-
 def eliminar_asistencia(asistencia_id):
     get_asistencias_collection().document(asistencia_id).delete()
 
@@ -207,7 +170,7 @@ def obtener_estadisticas():
     asistenciaes = obtener_asistencias()
 
     hoy = datetime.now()
-    membresias_activas = [m for m in membresias if m.activa]
+    membresias_activas = [m for m in membresias if m.activa and (m.fecha_fin is None or m.fecha_fin >= hoy)]
     membresias_vencidas = [m for m in membresias_activas if m.fecha_fin and m.fecha_fin < hoy]
     membresias_por_vencer = [m for m in membresias_activas if m.fecha_fin and hoy <= m.fecha_fin <= hoy + timedelta(days=3)]
     asistenciaes_hoy = [a for a in asistenciaes if a.fecha.date() == hoy.date()]

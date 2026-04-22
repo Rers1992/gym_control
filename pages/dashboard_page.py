@@ -1,7 +1,6 @@
 import flet as ft
 import asyncio
 from database import obtener_estadisticas
-#import config
 
 
 def dashboard_page(page: ft.Page):

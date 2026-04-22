@@ -1,7 +1,7 @@
 import flet as ft
 from settings_db import is_firebase_configured
 from pages.settings_page import settings_page
-from logger import logger, log_error
+from logger import log_error
 from datetime import datetime
 
 

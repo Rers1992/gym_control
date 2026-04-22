@@ -126,7 +126,13 @@ def clientes_page(page: ft.Page):
 
         dialog = ft.AlertDialog(
             title=ft.Text("Nuevo Cliente"),
-            content=ft.Column([rut_field, rut_error, nombre_field, telefono_field, email_field], tight=True, spacing=10),
+            content=ft.Column([
+                rut_field,
+                rut_error,
+                nombre_field,
+                telefono_field,
+                email_field,
+            ], tight=True, spacing=8, scroll=ft.ScrollMode.AUTO),
             actions=[
                 ft.TextButton("Cancelar", on_click=lambda e: page.close(dialog)),
                 ft.FilledButton("Guardar", on_click=save),
@@ -163,7 +169,13 @@ def clientes_page(page: ft.Page):
 
         dialog = ft.AlertDialog(
             title=ft.Text("Editar Cliente"),
-            content=ft.Column([rut_display, nombre_field, telefono_field, email_field, activo_switch], tight=True, spacing=10),
+            content=ft.Column([
+                rut_display,
+                nombre_field,
+                telefono_field,
+                email_field,
+                activo_switch,
+            ], tight=True, spacing=8, scroll=ft.ScrollMode.AUTO),
             actions=[
                 ft.TextButton("Cancelar", on_click=lambda e: page.close(dialog)),
                 ft.FilledButton("Guardar", on_click=save),

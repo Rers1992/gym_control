@@ -1,12 +1,11 @@
 import flet as ft
 from datetime import datetime
 from database import (
-    obtener_clientes, obtener_membresias_activas, obtener_membresias_por_cliente,
-    registrar_asistencia, obtener_asistencias, obtener_asistencias_por_cliente,
+    obtener_clientes, obtener_membresias_por_cliente, obtener_tipo_membresia,
+    registrar_asistencia, obtener_asistencias,
     eliminar_asistencia, actualizar_membresia, obtener_cliente
 )
 from models import Asistencia
-import config
 
 
 def asignar_membresia(page: ft.Page):
@@ -74,7 +73,8 @@ def asignar_membresia(page: ft.Page):
             membresias = obtener_membresias_por_cliente(rut)
             for m in membresias:
                 if m.activa:
-                    plan_nombre = config.PLANES.get(m.plan, {}).get("nombre", m.plan)
+                    tipo = obtener_tipo_membresia(m.plan)
+                    plan_nombre = tipo.nombre if tipo else m.plan
                     membresia_dropdown.options.append(
                         ft.dropdown.Option(m.id, f"{plan_nombre} - {m.fecha_inicio.strftime('%d/%m/%Y')}")
                     )

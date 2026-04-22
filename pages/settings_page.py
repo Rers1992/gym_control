@@ -1,7 +1,7 @@
 import flet as ft
 import os
 import json
-from settings_db import get_setting, set_setting, get_all_settings, is_firebase_configured
+from settings_db import get_setting, set_setting, is_firebase_configured
 from database import reset_db
 
 
@@ -145,10 +145,10 @@ def settings_page(page: ft.Page):
 
         try:
             from email_service import enviar_email_vencimiento
-            import config
-            config.EMAIL_SENDER = email_sender.value
-            config.EMAIL_PASSWORD = email_password.value
-            config.EMAIL_RECEIVER = email_receiver.value
+            from settings_db import set_setting
+            set_setting("email_sender", email_sender.value)
+            set_setting("email_password", email_password.value)
+            set_setting("email_receiver", email_receiver.value)
 
             success, msg = enviar_email_vencimiento(ignorar_limite=True)
             if success:
