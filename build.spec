@@ -12,7 +12,6 @@ a = Analysis(
     binaries=[],
     datas=[
         ('firebase_credentials.json', '.'),
-        ('.env', '.'),
     ],
     hiddenimports=[
         'firebase_admin',
