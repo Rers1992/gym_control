@@ -1,0 +1,5 @@
+envGymControl
+*.db
+*.log
+__pycache__/
+*.json

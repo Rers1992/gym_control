@@ -1,0 +1,217 @@
+import flet as ft
+from datetime import datetime
+from database import (
+    obtener_clientes, obtener_membresias_activas, obtener_membresias_por_cliente,
+    registrar_asistencia, obtener_asistencias, obtener_asistencias_por_cliente,
+    eliminar_asistencia, actualizar_membresia, obtener_cliente
+)
+from models import Asistencia
+import config
+
+
+def asignar_membresia(page: ft.Page):
+    cliente_field = ft.TextField(
+        label="Cliente",
+        hint_text="Buscar por nombre o RUT...",
+        autofocus=True,
+    )
+    sugerencias_list = ft.ListView(height=120, spacing=2, visible=False)
+
+    sugerencias_container = ft.Container(
+        content=sugerencias_list,
+        border=ft.border.all(1, ft.Colors.GREY_400),
+        border_radius=ft.border_radius.all(5),
+        bgcolor=ft.Colors.WHITE,
+        clip_behavior=ft.ClipBehavior.HARD_EDGE,
+    )
+
+    def actualizar_sugerencias(e):
+        texto = cliente_field.value or ""
+        sugerencias_list.controls.clear()
+
+        if texto:
+            clientes = obtener_clientes()
+            resultados = [
+                c for c in clientes
+                if texto.lower() in c.nombre.lower() or texto.lower() in c.id.lower()
+            ]
+            for c in resultados:
+                sugerencias_list.controls.append(
+                    ft.Container(
+                        content=ft.Text(f"{c.nombre} ({c.id})", size=14),
+                        padding=10,
+                        ink=True,
+                        on_click=lambda ev, cliente=c: seleccionar_cliente(cliente),
+                    )
+                )
+
+        sugerencias_list.visible = bool(texto and sugerencias_list.controls)
+        page.update()
+
+    def seleccionar_cliente(cliente):
+        cliente_field.value = f"{cliente.nombre} ({cliente.id})"
+        sugerencias_list.visible = False
+        load_membresias_cliente(cliente.id)
+        page.update()
+
+    cliente_field.on_change = actualizar_sugerencias
+
+    membresia_dropdown = ft.Dropdown(
+        label="Membresia activa",
+        expand=True,
+    )
+
+    nota_field = ft.TextField(label="Nota (opcional)", expand=True)
+
+    def load_membresias_cliente(rut_cliente=None):
+        membresia_dropdown.options = []
+        clientes = obtener_clientes()
+        rut = rut_cliente or (
+            next((c.id for c in clientes if f"{c.nombre} ({c.id})" == cliente_field.value), None)
+            if cliente_field.value else None
+        )
+        if rut:
+            membresias = obtener_membresias_por_cliente(rut)
+            for m in membresias:
+                if m.activa:
+                    plan_nombre = config.PLANES.get(m.plan, {}).get("nombre", m.plan)
+                    membresia_dropdown.options.append(
+                        ft.dropdown.Option(m.id, f"{plan_nombre} - {m.fecha_inicio.strftime('%d/%m/%Y')}")
+                    )
+        membresia_dropdown.update()
+
+    def registrar(e):
+        clientes = obtener_clientes()
+        rut = next((c.id for c in clientes if f"{c.nombre} ({c.id})" == cliente_field.value), None)
+        if not rut:
+            page.snack_bar = ft.SnackBar(ft.Text("Selecciona un cliente válido"), bgcolor=ft.Colors.RED)
+            page.snack_bar.open = True
+            page.update()
+            return
+
+        membresia_id = membresia_dropdown.value if membresia_dropdown.value else None
+
+        asistencia = Asistencia(
+            cliente_rut=rut,
+            membresia_id=membresia_id,
+            nota=nota_field.value,
+        )
+        registrar_asistencia(asistencia)
+
+        if membresia_id:
+            membresia = None
+            for m in obtener_membresias_por_cliente(rut):
+                if m.id == membresia_id:
+                    membresia = m
+                    break
+
+            if membresia:
+                nuevas_usadas = membresia.asistencias_usadas + 1
+                actualizar_membresia(membresia_id, {
+                    "asistencias_usadas": nuevas_usadas,
+                })
+
+        page.snack_bar = ft.SnackBar(ft.Text("Asistencia registrada"), bgcolor=ft.Colors.GREEN)
+        page.snack_bar.open = True
+        nota_field.value = ""
+        cliente_field.value = ""
+        membresia_dropdown.options = []
+        page.update()
+        load_asistencias()
+
+    def load_asistencias():
+        atrasos_list.controls.clear()
+        atrasos = obtener_asistencias()
+        atrasos.sort(key=lambda a: a.fecha, reverse=True)
+
+        if not atrasos:
+            atrasos_list.controls.append(
+                ft.Container(
+                    content=ft.Column([
+                        ft.Icon(ft.Icons.EVENT_BUSY, size=60, color=ft.Colors.GREY_400),
+                        ft.Text("No hay asistencias registradas", size=16, color=ft.Colors.GREY_600),
+                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                    padding=40,
+                )
+            )
+        else:
+            for a in atrasos[:50]:
+                cliente = obtener_cliente(a.cliente_id)
+                nombre_cliente = cliente.nombre if cliente else "Desconocido"
+
+                atrasos_list.controls.append(
+                    ft.Container(
+                        content=ft.Row([
+                            ft.Icon(ft.Icons.CHECK_CIRCLE, color=ft.Colors.GREEN, size=24),
+                            ft.Column([
+                                ft.Text(nombre_cliente, weight=ft.FontWeight.BOLD, size=14),
+                                ft.Text(
+                                    f"{a.fecha.strftime('%d/%m/%Y %H:%M')}" +
+                                    (f" | {a.nota}" if a.nota else ""),
+                                    size=12, color=ft.Colors.GREY_600,
+                                ),
+                            ], spacing=2, expand=True),
+                            ft.IconButton(
+                                icon=ft.Icons.DELETE,
+                                icon_color=ft.Colors.RED_400,
+                                tooltip="Eliminar",
+                                on_click=lambda e, asist=a: confirm_delete(asist),
+                            ),
+                        ]),
+                        padding=12,
+                        bgcolor=ft.Colors.WHITE,
+                        border_radius=8,
+                        shadow=ft.BoxShadow(blur_radius=3, color=ft.Colors.with_opacity(0.08, ft.Colors.BLACK)),
+                    )
+                )
+
+        atrasos_list.update()
+
+    def confirm_delete(asistencia):
+        def delete(e):
+            eliminar_asistencia(asistencia.id)
+            load_asistencias()
+            page.snack_bar = ft.SnackBar(ft.Text("Asistencia eliminada"), bgcolor=ft.Colors.GREEN)
+            page.snack_bar.open = True
+            page.update()
+            page.close(confirm_dialog)
+
+        confirm_dialog = ft.AlertDialog(
+            title=ft.Text("Confirmar eliminacion"),
+            content=ft.Text("¿Eliminar esta asistencia?"),
+            actions=[
+                ft.TextButton("Cancelar", on_click=lambda e: page.close(confirm_dialog)),
+                ft.FilledButton("Eliminar", on_click=delete, bgcolor=ft.Colors.RED),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        page.open(confirm_dialog)
+
+    atrasos_list = ft.ListView(spacing=6, expand=True)
+
+    def init():
+        load_asistencias()
+        page.update()
+
+    return (ft.Column([
+        ft.Text("Registro de Asistencias", size=28, weight=ft.FontWeight.BOLD),
+        ft.Container(height=10),
+        ft.Container(
+            content=ft.Column([
+                ft.Text("Registrar nueva asistencia", weight=ft.FontWeight.W_600, size=16),
+                ft.Container(height=10),
+                cliente_field,
+                sugerencias_container,
+                ft.Row([membresia_dropdown, nota_field]),
+                ft.Row([ft.FilledButton("Registrar", icon=ft.Icons.ADD, on_click=registrar)]),
+            ], spacing=10),
+            padding=20,
+            bgcolor=ft.Colors.WHITE,
+            border_radius=12,
+            shadow=ft.BoxShadow(blur_radius=8, color=ft.Colors.with_opacity(0.1, ft.Colors.BLACK)),
+        ),
+        ft.Container(height=15),
+        ft.Text("Historial de Asistencias", weight=ft.FontWeight.W_600, size=18),
+        ft.Container(height=5),
+        atrasos_list,
+    ], expand=True, spacing=10, scroll=ft.ScrollMode.AUTO), init)
