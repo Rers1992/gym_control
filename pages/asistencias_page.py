@@ -1,5 +1,4 @@
 import flet as ft
-from datetime import datetime
 from database import (
     obtener_clientes, obtener_membresias_por_cliente, obtener_tipo_membresia,
     registrar_asistencia, obtener_asistencias,

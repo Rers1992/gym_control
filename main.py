@@ -36,7 +36,6 @@ def main(page: ft.Page):
     from pages.clientes_page import clientes_page
     from pages.membresias_page import membresias_page
     from pages.asistencias_page import asignar_membresia
-    from email_service import verificar_y_enviar_alertas
 
     current_page_index = 0
 
