@@ -1,7 +1,15 @@
 import sqlite3
 import os
+import sys
 
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config_local.db")
+if getattr(sys, 'frozen', False):
+    # Si es ejecutable (.exe)
+    app_dir = os.path.dirname(sys.executable)
+else:
+    # Si es script (dev)
+    app_dir = os.path.dirname(os.path.abspath(__file__))
+
+DB_PATH = os.path.join(app_dir, "config_local.db")
 
 
 def get_connection():

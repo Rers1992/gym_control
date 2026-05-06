@@ -102,8 +102,12 @@ def main(page: ft.Page):
             ft.Text("Storage Firebase", size=9, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_500),
             storage_indicator,
             storage_usage_text,
-        ], spacing=2),
+            ft.Container(height=10),
+            ft.Container(expand=True),
+            ft.Text("© Rers rruiz.sazo@gmail.com", size=10, color=ft.Colors.GREY_600),
+        ], spacing=2, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
         padding=5,
+        expand=True,
     )
 
     rail = ft.NavigationRail(
@@ -113,10 +117,10 @@ def main(page: ft.Page):
         min_extended_width=100,
         group_alignment=-0.9,
         trailing=storage_footer,
-        leading=ft.Column([
-            ft.Icon(ft.Icons.FITNESS_CENTER, size=40, color=ft.Colors.BLUE),
-            ft.Text("Gym Control", weight=ft.FontWeight.BOLD, size=14),
-        ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+leading=ft.Column([
+ft.Image(src="charly_photo.jpg", width=100, height=100, fit=ft.ImageFit.CONTAIN),
+            ft.Text("Charly Boxing Team", weight=ft.FontWeight.BOLD, size=14),
+        ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=2),
         destinations=[
             ft.NavigationRailDestination(
                 icon=ft.Icons.DASHBOARD,

@@ -10,9 +10,10 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[
-        ('firebase_credentials.json', '.'),
-    ],
+datas=[
+    ('firebase_credentials.json', '.'),
+    ('charly_photo.jpg', '.'),
+],
     hiddenimports=[
         'firebase_admin',
         'firebase_admin.credentials',
