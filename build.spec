@@ -5,23 +5,22 @@ from pathlib import Path
 sys.setrecursionlimit(5000)
 
 block_cipher = None
+project_root = Path(SPECPATH)
 
 a = Analysis(
     ['main.py'],
-    pathex=[],
+    pathex=[str(project_root)],
     binaries=[],
-datas=[
-    ('firebase_credentials.json', '.'),
-    ('charly_photo.jpg', '.'),
-],
+    # Firebase credentials are selected by the user and must never be embedded.
+    # The brand image is loaded from PyInstaller's temporary bundle directory.
+    datas=[
+        (str(project_root / 'charly_photo.jpg'), '.'),
+    ],
     hiddenimports=[
         'firebase_admin',
         'firebase_admin.credentials',
         'firebase_admin.firestore',
         'flet',
-        'flet.page',
-        'flet.controls',
-        'flet_core',
         'google.cloud.firestore',
         'google.cloud',
         'grpc',

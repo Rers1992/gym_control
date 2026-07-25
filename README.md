@@ -4,8 +4,8 @@ Aplicación de escritorio para llevar el control de mensualidades y clientes de 
 
 ## Tecnologías
 
-- **Python 3.10+**
-- **Flet** - Framework de UI
+- **Python 3.14.4**
+- **Flet 0.86.1** - Framework de UI
 - **Firebase Firestore** - Base de datos en la nube (gratuita)
 - **PyInstaller** - Empaquetado como ejecutable
 
@@ -92,8 +92,8 @@ gym_control/
 
 ```bash
 # Crear entorno virtual
-python -m venv venv
-venv\Scripts\activate
+py -3.14 -m venv envGymControl
+envGymControl\Scripts\activate
 
 # Instalar dependencias
 pip install -r requirements.txt
@@ -109,7 +109,7 @@ python main.py
 pip install -r requirements.txt
 
 # Compilar con PyInstaller
-pyinstaller build.spec
+python -m PyInstaller --clean --noconfirm build.spec
 
 # El ejecutable estará en dist/GymControl.exe
 ```
@@ -169,6 +169,8 @@ service cloud.firestore {
 ```
 gym_control/
 ├── main.py                   # Punto de entrada de la app
+├── ui.py                     # Tema y componentes visuales compartidos
+├── resource_utils.py         # Recursos compatibles con PyInstaller
 ├── config.py                 # Configuración global
 ├── models.py                 # Modelos de datos
 ├── database.py               # Operaciones de Firebase

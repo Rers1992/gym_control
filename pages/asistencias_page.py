@@ -5,6 +5,11 @@ from database import (
     eliminar_asistencia, actualizar_membresia, obtener_cliente
 )
 from models import Asistencia
+from ui import (
+    BORDER, DANGER, PRIMARY, SUCCESS, SUCCESS_SOFT, SURFACE,
+    TEXT, TEXT_MUTED, CARD_SHADOW, empty_state, page_header, section_title,
+    show_snack, surface,
+)
 
 
 def asignar_membresia(page: ft.Page):
@@ -12,14 +17,18 @@ def asignar_membresia(page: ft.Page):
         label="Cliente",
         hint_text="Buscar por nombre o RUT...",
         autofocus=True,
+        prefix_icon=ft.Icons.PERSON_SEARCH,
+        border_color=BORDER,
+        focused_border_color=PRIMARY,
+        border_radius=10,
     )
     sugerencias_list = ft.ListView(height=120, spacing=2, visible=False)
 
     sugerencias_container = ft.Container(
         content=sugerencias_list,
-        border=ft.border.all(1, ft.Colors.GREY_400),
-        border_radius=ft.border_radius.all(5),
-        bgcolor=ft.Colors.WHITE,
+        border=ft.Border.all(1, BORDER),
+        border_radius=ft.BorderRadius.all(10),
+        bgcolor=SURFACE,
         clip_behavior=ft.ClipBehavior.HARD_EDGE,
     )
 
@@ -83,8 +92,7 @@ def asignar_membresia(page: ft.Page):
         clientes = obtener_clientes()
         rut = next((c.id for c in clientes if f"{c.nombre} ({c.id})" == cliente_field.value), None)
         if not rut:
-            page.snack_bar = ft.SnackBar(ft.Text("Selecciona un cliente válido"), bgcolor=ft.Colors.RED)
-            page.snack_bar.open = True
+            show_snack(page, "Selecciona un cliente válido", DANGER)
             page.update()
             return
 
@@ -110,8 +118,7 @@ def asignar_membresia(page: ft.Page):
                     "asistencias_usadas": nuevas_usadas,
                 })
 
-        page.snack_bar = ft.SnackBar(ft.Text("Asistencia registrada"), bgcolor=ft.Colors.GREEN)
-        page.snack_bar.open = True
+        show_snack(page, "Asistencia registrada", SUCCESS)
         nota_field.value = ""
         cliente_field.value = ""
         membresia_dropdown.options = []
@@ -125,12 +132,10 @@ def asignar_membresia(page: ft.Page):
 
         if not atrasos:
             atrasos_list.controls.append(
-                ft.Container(
-                    content=ft.Column([
-                        ft.Icon(ft.Icons.EVENT_BUSY, size=60, color=ft.Colors.GREY_400),
-                        ft.Text("No hay asistencias registradas", size=16, color=ft.Colors.GREY_600),
-                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-                    padding=40,
+                empty_state(
+                    ft.Icons.EVENT_AVAILABLE,
+                    "Aún no hay asistencias",
+                    "Los ingresos registrados aparecerán en este historial.",
                 )
             )
         else:
@@ -141,26 +146,34 @@ def asignar_membresia(page: ft.Page):
                 atrasos_list.controls.append(
                     ft.Container(
                         content=ft.Row([
-                            ft.Icon(ft.Icons.CHECK_CIRCLE, color=ft.Colors.GREEN, size=24),
+                            ft.Container(
+                                content=ft.Icon(ft.Icons.CHECK, color=SUCCESS, size=20),
+                                width=40,
+                                height=40,
+                                bgcolor=SUCCESS_SOFT,
+                                border_radius=20,
+                                alignment=ft.Alignment.CENTER,
+                            ),
                             ft.Column([
-                                ft.Text(nombre_cliente, weight=ft.FontWeight.BOLD, size=14),
+                                ft.Text(nombre_cliente, weight=ft.FontWeight.W_600, size=14, color=TEXT),
                                 ft.Text(
                                     f"{a.fecha.strftime('%d/%m/%Y %H:%M')}" +
-                                    (f" | {a.nota}" if a.nota else ""),
-                                    size=12, color=ft.Colors.GREY_600,
+                                    (f"  ·  {a.nota}" if a.nota else ""),
+                                    size=11, color=TEXT_MUTED,
                                 ),
                             ], spacing=2, expand=True),
                             ft.IconButton(
                                 icon=ft.Icons.DELETE,
-                                icon_color=ft.Colors.RED_400,
+                                icon_color=DANGER,
                                 tooltip="Eliminar",
                                 on_click=lambda e, asist=a: confirm_delete(asist),
                             ),
                         ]),
                         padding=12,
-                        bgcolor=ft.Colors.WHITE,
-                        border_radius=8,
-                        shadow=ft.BoxShadow(blur_radius=3, color=ft.Colors.with_opacity(0.08, ft.Colors.BLACK)),
+                        bgcolor=SURFACE,
+                        border=ft.Border.all(1, BORDER),
+                        border_radius=12,
+                        shadow=CARD_SHADOW,
                     )
                 )
 
@@ -170,21 +183,20 @@ def asignar_membresia(page: ft.Page):
         def delete(e):
             eliminar_asistencia(asistencia.id)
             load_asistencias()
-            page.snack_bar = ft.SnackBar(ft.Text("Asistencia eliminada"), bgcolor=ft.Colors.GREEN)
-            page.snack_bar.open = True
+            show_snack(page, "Asistencia eliminada", SUCCESS)
             page.update()
-            page.close(confirm_dialog)
+            page.pop_dialog()
 
         confirm_dialog = ft.AlertDialog(
             title=ft.Text("Confirmar eliminacion"),
             content=ft.Text("¿Eliminar esta asistencia?"),
             actions=[
-                ft.TextButton("Cancelar", on_click=lambda e: page.close(confirm_dialog)),
+                ft.TextButton("Cancelar", on_click=lambda e: page.pop_dialog()),
                 ft.FilledButton("Eliminar", on_click=delete, bgcolor=ft.Colors.RED),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-        page.open(confirm_dialog)
+        page.show_dialog(confirm_dialog)
 
     atrasos_list = ft.ListView(spacing=6, expand=True)
 
@@ -193,24 +205,22 @@ def asignar_membresia(page: ft.Page):
         page.update()
 
     return (ft.Column([
-        ft.Text("Registro de Asistencias", size=28, weight=ft.FontWeight.BOLD),
-        ft.Container(height=10),
-        ft.Container(
+        page_header(
+            "Asistencias",
+            "Registra ingresos y revisa la actividad reciente.",
+        ),
+        surface(
             content=ft.Column([
-                ft.Text("Registrar nueva asistencia", weight=ft.FontWeight.W_600, size=16),
-                ft.Container(height=10),
+                section_title("Registrar nueva asistencia", ft.Icons.ADD_TASK),
                 cliente_field,
                 sugerencias_container,
                 ft.Row([membresia_dropdown, nota_field]),
-                ft.Row([ft.FilledButton("Registrar", icon=ft.Icons.ADD, on_click=registrar)]),
+                ft.Row([
+                    ft.FilledButton("Registrar ingreso", icon=ft.Icons.CHECK, on_click=registrar),
+                ], alignment=ft.MainAxisAlignment.END),
             ], spacing=10),
             padding=20,
-            bgcolor=ft.Colors.WHITE,
-            border_radius=12,
-            shadow=ft.BoxShadow(blur_radius=8, color=ft.Colors.with_opacity(0.1, ft.Colors.BLACK)),
         ),
-        ft.Container(height=15),
-        ft.Text("Historial de Asistencias", weight=ft.FontWeight.W_600, size=18),
-        ft.Container(height=5),
+        section_title("Historial reciente", ft.Icons.HISTORY),
         atrasos_list,
-    ], expand=True, spacing=10, scroll=ft.ScrollMode.AUTO), init)
+    ], expand=True, spacing=16, scroll=ft.ScrollMode.AUTO), init)

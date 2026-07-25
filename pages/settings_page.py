@@ -3,6 +3,10 @@ import os
 import json
 from settings_db import get_setting, set_setting, is_firebase_configured
 from database import reset_db
+from ui import (
+    BORDER, PRIMARY, SUCCESS, SUCCESS_SOFT, SURFACE, TEXT, TEXT_MUTED, WARNING,
+    WARNING_SOFT, page_header, section_title, surface,
+)
 
 
 def settings_page(page: ft.Page):
@@ -54,20 +58,16 @@ def settings_page(page: ft.Page):
 
     status_text = ft.Text("", size=14)
 
-    def browse_credentials(e):
-        def on_result(result):
-            if result.files:
-                firebase_cred_path.value = result.files[0].path
-                page.update()
-
-        dialog = ft.FilePicker(on_result=on_result)
-        page.overlay.append(dialog)
-        page.update()
-        dialog.pick_files(
+    async def browse_credentials(e):
+        files = await ft.FilePicker().pick_files(
             dialog_title="Seleccionar credenciales de Firebase",
+            file_type=ft.FilePickerFileType.CUSTOM,
             allowed_extensions=["json"],
             allow_multiple=False,
         )
+        if files:
+            firebase_cred_path.value = files[0].path
+            page.update()
 
     def save_settings(e):
         errors = []
@@ -176,59 +176,76 @@ def settings_page(page: ft.Page):
         content=ft.Row([
             ft.Icon(
                 ft.Icons.CHECK_CIRCLE if is_firebase_configured() else ft.Icons.WARNING,
-                color=ft.Colors.GREEN if is_firebase_configured() else ft.Colors.ORANGE,
+                color=SUCCESS if is_firebase_configured() else WARNING,
                 size=20,
             ),
             ft.Text(
                 "Firebase configurado" if is_firebase_configured() else "Firebase NO configurado",
                 size=14,
-                weight=ft.FontWeight.W_500,
+                weight=ft.FontWeight.W_600,
+                color=TEXT,
             ),
         ]),
-        padding=10,
-        bgcolor=ft.Colors.GREEN_50 if is_firebase_configured() else ft.Colors.ORANGE_50,
-        border_radius=8,
+        padding=12,
+        bgcolor=SUCCESS_SOFT if is_firebase_configured() else WARNING_SOFT,
+        border=ft.Border.all(1, SUCCESS if is_firebase_configured() else WARNING),
+        border_radius=10,
     )
 
     return ft.ListView(
-        spacing=10,
-        padding=10,
+        spacing=16,
+        padding=0,
         controls=[
-            ft.Text("Configuracion", size=22, weight=ft.FontWeight.BOLD),
-            ft.Text("Firebase y notificaciones", size=12, color=ft.Colors.GREY_600),
-            firebase_status,
-            ft.Container(
-                content=ft.Row([
+            page_header(
+                "Configuración",
+                "Conexiones, notificaciones y preferencias del sistema.",
+            ),
+            surface(ft.Column([
+                section_title("Conexión con Firebase", ft.Icons.CLOUD_OUTLINED),
+                firebase_status,
+                ft.Row([
                     firebase_cred_path,
                     ft.IconButton(
                         icon=ft.Icons.FOLDER_OPEN,
                         tooltip="Buscar archivo",
+                        icon_color=PRIMARY,
                         on_click=browse_credentials,
                     ),
                 ]),
-            ),
-            firebase_project_id,
-            ft.Text(
-                "Obten las credenciales en Firebase Console > Configuracion del proyecto > Cuentas de servicio > Generar clave privada",
-                size=11, color=ft.Colors.GREY_500, italic=True,
-            ),
-            ft.Container(height=15),
-            ft.Text("Email", weight=ft.FontWeight.BOLD, size=14),
-            email_sender,
-            email_password,
-            email_receiver,
-            ft.Row([
-                ft.Text("Dias de aviso:", size=14),
-                dias_aviso,
-            ]),
-            ft.Text(
-                "Necesitas generar un App Password en tu cuenta de Google: https://myaccount.google.com/apppasswords",
-                size=11, color=ft.Colors.GREY_500, italic=True,
-            ),
-            ft.Container(height=15),
+                firebase_project_id,
+                ft.Text(
+                    "Obtén las credenciales en Firebase Console › Configuración del proyecto › "
+                    "Cuentas de servicio › Generar clave privada.",
+                    size=11,
+                    color=TEXT_MUTED,
+                    italic=True,
+                ),
+            ], spacing=12), padding=20),
+            surface(ft.Column([
+                section_title("Alertas por email", ft.Icons.MAIL_OUTLINE),
+                ft.Text(
+                    "Configura la cuenta desde la que se enviarán los avisos de vencimiento.",
+                    size=12,
+                    color=TEXT_MUTED,
+                ),
+                email_sender,
+                email_password,
+                email_receiver,
+                ft.Row([
+                    ft.Text("Avisar antes del vencimiento", size=13, color=TEXT),
+                    dias_aviso,
+                    ft.Text("días", size=13, color=TEXT_MUTED),
+                ]),
+                ft.Text(
+                    "La cuenta de Google necesita una contraseña de aplicación.",
+                    size=11,
+                    color=TEXT_MUTED,
+                    italic=True,
+                ),
+            ], spacing=12), padding=20),
             ft.Row([
                 ft.FilledButton(
-                    "Guardar Configuracion",
+                    "Guardar configuración",
                     icon=ft.Icons.SAVE,
                     on_click=save_settings,
                 ),
@@ -247,12 +264,14 @@ def settings_page(page: ft.Page):
                     icon=ft.Icons.REFRESH,
                     on_click=load_settings,
                 ),
-            ]),
+            ], spacing=10, wrap=True),
             ft.Container(
                 content=status_text,
                 padding=15,
-                bgcolor=ft.Colors.WHITE,
-                border_radius=8,
+                bgcolor=SURFACE,
+                border=ft.Border.all(1, BORDER),
+                border_radius=10,
+                visible=True,
             ),
         ],
         expand=1,

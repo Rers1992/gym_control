@@ -3,20 +3,20 @@
 ## Run Commands
 
 ```bash
-# Run the app (requires venv active or flet installed)
+# Run the app (requires envGymControl active)
 python main.py
 
 # Compile to exe
 pyinstaller build.spec
 
 # Syntax check
-python -m py_compile main.py pages/*.py
+python -m compileall main.py ui.py resource_utils.py pages
 ```
 
 ## Key Constraints
 
-- **Flet version**: 0.25.2 — do not use `ft.SelectableText` (added in 0.26+), use `ft.Text` instead
-- **Python**: 3.9.5+ required; older Python versions cause warnings with google-auth libraries
+- **Flet version**: 0.86.1 — use the current class helpers (`ft.Alignment`, `ft.Padding`, `ft.Border`, `ft.BorderRadius`)
+- **Python**: 3.14.4; recreate `envGymControl` with `py -3.14 -m venv --clear envGymControl`
 - **Firebase Firestore** must be enabled in Google Cloud Console AND a database created before first run
 - Local settings stored in `config_local.db` (SQLite); Firebase credentials stored separately
 
@@ -35,6 +35,8 @@ python -m py_compile main.py pages/*.py
 - `ft.Column` and `ft.ListView` accept `scroll=ft.ScrollMode.AUTO`
 - Page navigation via `page.run_task()` for async periodic updates (not `on_interval`)
 - `NavigationRail` + content_area Row layout for sidebar navigation
+- Dialogs use `page.show_dialog()` / `page.pop_dialog()`; `page.open()`, `page.close()`, and `page.snack_bar` were removed
+- `FilePicker.pick_files()` is async and must be awaited
 - File paths with non-ASCII chars need UTF-8 handling in PowerShell
 
 ## Firebase Setup (common failure point)

@@ -3,31 +3,42 @@ from settings_db import is_firebase_configured
 from pages.settings_page import settings_page
 from logger import log_error
 from datetime import datetime
+from ui import (
+    APP_BG, DANGER, NAV_BG, NAV_MUTED, NAV_SURFACE, PRIMARY, PRIMARY_SOFT,
+    SUCCESS, SURFACE, TEXT, TEXT_MUTED, WARNING, brand_image, configure_page,
+    show_snack, surface,
+)
 
 
 def main(page: ft.Page):
     page.title = "Gym Control"
-    page.window.width = 1200
-    page.window.height = 800
-    page.theme_mode = ft.ThemeMode.LIGHT
-    page.bgcolor = ft.Colors.GREY_100
-    page.padding = 20
+    page.window.width = 1280
+    page.window.height = 820
+    page.window.min_width = 1024
+    page.window.min_height = 680
+    configure_page(page)
 
     if not is_firebase_configured():
         page.add(
-            ft.Column([
-                ft.Container(height=20),
-                ft.Row([
-                    ft.Icon(ft.Icons.SETTINGS_SUGGEST, size=40, color=ft.Colors.BLUE),
-                    ft.Text("Configura Gym Control", size=24, weight=ft.FontWeight.BOLD),
-                ]),
-                ft.Text("Primero necesitas configurar Firebase para conectar con la base de datos", size=14, color=ft.Colors.GREY_600),
-                ft.Container(height=15),
-                ft.Container(
-                    content=settings_page(page),
-                    expand=True,
-                ),
-            ], scroll=ft.ScrollMode.AUTO),
+            ft.Container(
+                content=ft.Column([
+                    ft.Row([
+                        brand_image(64),
+                        ft.Column([
+                            ft.Text("Configura Gym Control", size=26, weight=ft.FontWeight.W_700, color=TEXT),
+                            ft.Text(
+                                "Conecta Firebase para comenzar a administrar tu gimnasio.",
+                                size=13,
+                                color=TEXT_MUTED,
+                            ),
+                        ], spacing=2),
+                    ], spacing=16),
+                    surface(settings_page(page), padding=20, expand=True),
+                ], spacing=20, expand=True),
+                padding=32,
+                bgcolor=APP_BG,
+                expand=True,
+            ),
         )
         page.update()
         return
@@ -65,14 +76,21 @@ def main(page: ft.Page):
         except Exception as ex:
             log_error(ex, f"update_content page_index={current_page_index}")
             content_area.content = ft.Column([
-                ft.Text("Error al cargar la pagina", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.RED),
+                ft.Icon(ft.Icons.ERROR_OUTLINE, size=42, color=DANGER),
+                ft.Text("Error al cargar la página", size=20, weight=ft.FontWeight.BOLD, color=TEXT),
                 ft.Container(height=10),
-                ft.Text(str(ex), size=12),
-            ])
+                ft.Text(str(ex), size=12, color=TEXT_MUTED),
+            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER)
             content_area.update()
 
-    storage_usage_text = ft.Text("Cargando...", size=10, color=ft.Colors.GREY_600)
-    storage_indicator = ft.ProgressBar(width=80, height=6, bar_height=4)
+    storage_usage_text = ft.Text("Cargando...", size=10, color=NAV_MUTED)
+    storage_indicator = ft.ProgressBar(
+        width=118,
+        height=6,
+        bar_height=4,
+        bgcolor=NAV_SURFACE,
+        color=SUCCESS,
+    )
 
     def update_storage_indicator():
         try:
@@ -81,71 +99,87 @@ def main(page: ft.Page):
             storage_usage_text.value = f"{uso['mb']} MB / 1024 MB"
             storage_indicator.value = uso['porcentaje'] / 100
             if uso['porcentaje'] > 80:
-                storage_indicator.color = ft.Colors.RED
-                storage_usage_text.color = ft.Colors.RED
+                storage_indicator.color = DANGER
+                storage_usage_text.color = DANGER
             elif uso['porcentaje'] > 50:
-                storage_indicator.color = ft.Colors.ORANGE
-                storage_usage_text.color = ft.Colors.ORANGE
+                storage_indicator.color = WARNING
+                storage_usage_text.color = WARNING
             else:
-                storage_indicator.color = ft.Colors.GREEN
-                storage_usage_text.color = ft.Colors.GREY_700
+                storage_indicator.color = SUCCESS
+                storage_usage_text.color = NAV_MUTED
             storage_indicator.update()
             storage_usage_text.update()
         except Exception as ex:
             storage_usage_text.value = "Error"
-            storage_usage_text.color = ft.Colors.RED
+            storage_usage_text.color = DANGER
             storage_usage_text.update()
             log_error(ex, "update_storage_indicator")
 
     storage_footer = ft.Container(
         content=ft.Column([
-            ft.Text("Storage Firebase", size=9, weight=ft.FontWeight.BOLD, color=ft.Colors.GREY_500),
+            ft.Row([
+                ft.Container(width=7, height=7, bgcolor=SUCCESS, border_radius=4),
+                ft.Text("FIREBASE ACTIVO", size=9, weight=ft.FontWeight.W_700, color=NAV_MUTED),
+            ], spacing=6, alignment=ft.MainAxisAlignment.CENTER),
             storage_indicator,
             storage_usage_text,
-            ft.Container(height=10),
-            ft.Container(expand=True),
-            ft.Text("© Rers rruiz.sazo@gmail.com", size=10, color=ft.Colors.GREY_600),
+            ft.Container(height=6),
+            ft.Text("Gym Control · v2", size=10, color=NAV_MUTED),
         ], spacing=2, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-        padding=5,
-        expand=True,
+        padding=ft.Padding.symmetric(horizontal=16, vertical=14),
+        bgcolor=NAV_SURFACE,
+        border_radius=14,
     )
 
     rail = ft.NavigationRail(
         selected_index=0,
         label_type=ft.NavigationRailLabelType.ALL,
-        min_width=100,
-        min_extended_width=100,
-        group_alignment=-0.9,
+        min_width=178,
+        min_extended_width=178,
+        group_alignment=-0.72,
+        bgcolor=NAV_BG,
+        indicator_color=PRIMARY,
+        use_indicator=True,
+        selected_label_text_style=ft.TextStyle(
+            color=ft.Colors.WHITE,
+            size=11,
+            weight=ft.FontWeight.W_600,
+        ),
+        unselected_label_text_style=ft.TextStyle(color=NAV_MUTED, size=11),
+        pin_trailing_to_bottom=True,
         trailing=storage_footer,
-leading=ft.Column([
-ft.Image(src="charly_photo.jpg", width=100, height=100, fit=ft.ImageFit.CONTAIN),
-            ft.Text("Charly Boxing Team", weight=ft.FontWeight.BOLD, size=14),
+        leading=ft.Column([
+            brand_image(68),
+            ft.Container(height=4),
+            ft.Text("CHARLY BOXING", weight=ft.FontWeight.W_700, size=14, color=ft.Colors.WHITE),
+            ft.Text("PERFORMANCE TEAM", weight=ft.FontWeight.W_600, size=8, color=PRIMARY),
+            ft.Container(width=108, height=1, bgcolor=NAV_SURFACE, margin=ft.Padding.only(top=12)),
         ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=2),
         destinations=[
             ft.NavigationRailDestination(
-                icon=ft.Icons.DASHBOARD,
-                selected_icon=ft.Icons.DASHBOARD,
+                icon=ft.Icon(ft.Icons.DASHBOARD_OUTLINED, color=NAV_MUTED),
+                selected_icon=ft.Icon(ft.Icons.DASHBOARD, color=ft.Colors.WHITE),
                 label="Dashboard",
             ),
             ft.NavigationRailDestination(
-                icon=ft.Icons.PEOPLE,
-                selected_icon=ft.Icons.PEOPLE,
+                icon=ft.Icon(ft.Icons.PEOPLE_OUTLINE, color=NAV_MUTED),
+                selected_icon=ft.Icon(ft.Icons.PEOPLE, color=ft.Colors.WHITE),
                 label="Clientes",
             ),
             ft.NavigationRailDestination(
-                icon=ft.Icons.CARD_MEMBERSHIP,
-                selected_icon=ft.Icons.CARD_MEMBERSHIP,
-                label="Membresias",
+                icon=ft.Icon(ft.Icons.CARD_MEMBERSHIP_OUTLINED, color=NAV_MUTED),
+                selected_icon=ft.Icon(ft.Icons.CARD_MEMBERSHIP, color=ft.Colors.WHITE),
+                label="Membresías",
             ),
             ft.NavigationRailDestination(
-                icon=ft.Icons.EVENT_AVAILABLE,
-                selected_icon=ft.Icons.EVENT_AVAILABLE,
+                icon=ft.Icon(ft.Icons.EVENT_AVAILABLE_OUTLINED, color=NAV_MUTED),
+                selected_icon=ft.Icon(ft.Icons.EVENT_AVAILABLE, color=ft.Colors.WHITE),
                 label="Asistencias",
             ),
             ft.NavigationRailDestination(
-                icon=ft.Icons.SETTINGS,
-                selected_icon=ft.Icons.SETTINGS,
-                label="Settings",
+                icon=ft.Icon(ft.Icons.SETTINGS_OUTLINED, color=NAV_MUTED),
+                selected_icon=ft.Icon(ft.Icons.SETTINGS, color=ft.Colors.WHITE),
+                label="Configuración",
             ),
         ],
         on_change=navigate,
@@ -161,15 +195,20 @@ ft.Image(src="charly_photo.jpg", width=100, height=100, fit=ft.ImageFit.CONTAIN)
 
     content_area = ft.Container(
         content=load_page(dashboard_page),
+        padding=ft.Padding.symmetric(horizontal=32, vertical=26),
+        bgcolor=APP_BG,
         expand=True,
     )
 
     page.add(
         ft.Row([
-            rail,
-            ft.VerticalDivider(width=1),
+            ft.Container(
+                content=rail,
+                width=178,
+                bgcolor=NAV_BG,
+            ),
             content_area,
-        ], expand=True),
+        ], spacing=0, expand=True),
     )
     page.update()
     update_storage_indicator()
@@ -189,12 +228,10 @@ ft.Image(src="charly_photo.jpg", width=100, height=100, fit=ft.ImageFit.CONTAIN)
                 from email_service import verificar_y_enviar_alertas
                 result = verificar_y_enviar_alertas()
                 if result["exitoso"] and "ya enviada" not in result["mensaje"]:
-                    page.snack_bar = ft.SnackBar(ft.Text(result["mensaje"]), bgcolor=ft.Colors.GREEN)
-                    page.snack_bar.open = True
+                    show_snack(page, result["mensaje"], SUCCESS)
                     page.update()
                 elif not result["exitoso"]:
-                    page.snack_bar = ft.SnackBar(ft.Text(f"Error email: {result['mensaje']}"), bgcolor=ft.Colors.RED)
-                    page.snack_bar.open = True
+                    show_snack(page, f"Error email: {result['mensaje']}", DANGER)
                     page.update()
             except Exception as ex:
                 log_error(ex, "alert_scheduler")
@@ -204,8 +241,7 @@ ft.Image(src="charly_photo.jpg", width=100, height=100, fit=ft.ImageFit.CONTAIN)
         from email_service import verificar_y_enviar_alertas
         result = verificar_y_enviar_alertas()
         if result["exitoso"] and "ya enviada" not in result["mensaje"]:
-            page.snack_bar = ft.SnackBar(ft.Text(result["mensaje"]), bgcolor=ft.Colors.GREEN)
-            page.snack_bar.open = True
+            show_snack(page, result["mensaje"], SUCCESS)
             page.update()
 
     page.run_task(initial_alert_check)
@@ -213,4 +249,4 @@ ft.Image(src="charly_photo.jpg", width=100, height=100, fit=ft.ImageFit.CONTAIN)
 
 
 if __name__ == "__main__":
-    ft.app(target=main)
+    ft.run(main)

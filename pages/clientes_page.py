@@ -4,13 +4,22 @@ from database import (
     buscar_clientes, rut_existe
 )
 from models import Cliente, validar_rut, formatear_rut
+from ui import (
+    BORDER, DANGER, INFO, INFO_SOFT, PRIMARY, SUCCESS, SUCCESS_SOFT, SURFACE,
+    TEXT, TEXT_MUTED, CARD_SHADOW, empty_state, page_header, show_snack,
+    status_badge,
+)
 
 
 def clientes_page(page: ft.Page):
     search_field = ft.TextField(
-        label="Buscar cliente...",
+        hint_text="Buscar por nombre, RUT, teléfono o email...",
         prefix_icon=ft.Icons.SEARCH,
         expand=True,
+        bgcolor=SURFACE,
+        border_color=BORDER,
+        focused_border_color=PRIMARY,
+        border_radius=12,
         on_submit=lambda e: load_clientes(),
     )
 
@@ -25,28 +34,39 @@ def clientes_page(page: ft.Page):
 
         if not clientes:
             clientes_list.controls.append(
-                ft.Container(
-                    content=ft.Column([
-                        ft.Icon(ft.Icons.PERSON_OFF, size=60, color=ft.Colors.GREY_400),
-                        ft.Text("No hay clientes registrados", size=16, color=ft.Colors.GREY_600),
-                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-                    padding=40,
+                empty_state(
+                    ft.Icons.PERSON_SEARCH,
+                    "No encontramos clientes",
+                    "Registra un cliente nuevo o prueba con otra búsqueda.",
                 )
             )
         else:
             for c in clientes:
+                initials = "".join(part[0] for part in c.nombre.split()[:2]).upper() or "CL"
                 clientes_list.controls.append(
                     ft.Container(
                         content=ft.Row([
-                            ft.Icon(ft.Icons.PERSON, color=ft.Colors.BLUE, size=30),
+                            ft.Container(
+                                content=ft.Text(initials, color=INFO, weight=ft.FontWeight.W_700, size=13),
+                                width=44,
+                                height=44,
+                                bgcolor=INFO_SOFT,
+                                border_radius=22,
+                                alignment=ft.Alignment.CENTER,
+                            ),
                             ft.Column([
-                                ft.Text(f"{c.nombre} ({formatear_rut(c.rut)})", weight=ft.FontWeight.BOLD, size=16),
-                                ft.Text(f"Tel: {c.telefono} | Email: {c.email}", size=12, color=ft.Colors.GREY_600),
-                                ft.Text(f"Registro: {c.fecha_registro.strftime('%d/%m/%Y')}", size=11, color=ft.Colors.GREY_500),
+                                ft.Text(c.nombre, weight=ft.FontWeight.W_600, size=15, color=TEXT),
+                                ft.Text(
+                                    f"RUT {formatear_rut(c.rut)}  ·  {c.telefono or 'Sin teléfono'}  ·  {c.email or 'Sin email'}",
+                                    size=11,
+                                    color=TEXT_MUTED,
+                                ),
+                                ft.Text(f"Registro: {c.fecha_registro.strftime('%d/%m/%Y')}", size=10, color=TEXT_MUTED),
                             ], spacing=2, expand=True),
-                            ft.Chip(
-                                label=ft.Text("Activo" if c.activo else "Inactivo", size=12),
-                                color=ft.Colors.GREEN if c.activo else ft.Colors.RED,
+                            status_badge(
+                                "Activo" if c.activo else "Inactivo",
+                                SUCCESS if c.activo else DANGER,
+                                SUCCESS_SOFT if c.activo else "#FEEDEC",
                             ),
                             ft.Row([
                                 ft.IconButton(
@@ -57,15 +77,16 @@ def clientes_page(page: ft.Page):
                                 ft.IconButton(
                                     icon=ft.Icons.DELETE,
                                     tooltip="Eliminar",
-                                    icon_color=ft.Colors.RED,
+                                    icon_color=DANGER,
                                     on_click=lambda e, cliente=c: confirm_delete(cliente),
                                 ),
                             ]),
                         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                         padding=15,
-                        bgcolor=ft.Colors.WHITE,
-                        border_radius=10,
-                        shadow=ft.BoxShadow(blur_radius=5, color=ft.Colors.with_opacity(0.1, ft.Colors.BLACK)),
+                        bgcolor=SURFACE,
+                        border=ft.Border.all(1, BORDER),
+                        border_radius=12,
+                        shadow=CARD_SHADOW,
                     )
                 )
         clientes_list.update()
@@ -104,8 +125,7 @@ def clientes_page(page: ft.Page):
                 rut_error.update()
                 return
             if not nombre_field.value:
-                page.snack_bar = ft.SnackBar(ft.Text("El nombre es obligatorio"), bgcolor=ft.Colors.RED)
-                page.snack_bar.open = True
+                show_snack(page, "El nombre es obligatorio", DANGER)
                 page.update()
                 return
 
@@ -117,10 +137,9 @@ def clientes_page(page: ft.Page):
             )
             crear_cliente(cliente)
             load_clientes()
-            page.snack_bar = ft.SnackBar(ft.Text("Cliente creado exitosamente"), bgcolor=ft.Colors.GREEN)
-            page.snack_bar.open = True
+            show_snack(page, "Cliente creado exitosamente", SUCCESS)
             page.update()
-            page.close(dialog)
+            page.pop_dialog()
 
         rut_field.on_change = on_rut_change
 
@@ -134,12 +153,12 @@ def clientes_page(page: ft.Page):
                 email_field,
             ], tight=True, spacing=8, scroll=ft.ScrollMode.AUTO),
             actions=[
-                ft.TextButton("Cancelar", on_click=lambda e: page.close(dialog)),
+                ft.TextButton("Cancelar", on_click=lambda e: page.pop_dialog()),
                 ft.FilledButton("Guardar", on_click=save),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-        page.open(dialog)
+        page.show_dialog(dialog)
 
     def show_edit_dialog(cliente):
         rut_display = ft.Text(f"RUT: {formatear_rut(cliente.rut)}", size=14, color=ft.Colors.GREY_600)
@@ -150,8 +169,7 @@ def clientes_page(page: ft.Page):
 
         def save(e):
             if not nombre_field.value:
-                page.snack_bar = ft.SnackBar(ft.Text("El nombre es obligatorio"), bgcolor=ft.Colors.RED)
-                page.snack_bar.open = True
+                show_snack(page, "El nombre es obligatorio", DANGER)
                 page.update()
                 return
 
@@ -162,10 +180,9 @@ def clientes_page(page: ft.Page):
                 "activo": activo_switch.value,
             })
             load_clientes()
-            page.snack_bar = ft.SnackBar(ft.Text("Cliente actualizado"), bgcolor=ft.Colors.GREEN)
-            page.snack_bar.open = True
+            show_snack(page, "Cliente actualizado", SUCCESS)
             page.update()
-            page.close(dialog)
+            page.pop_dialog()
 
         dialog = ft.AlertDialog(
             title=ft.Text("Editar Cliente"),
@@ -177,32 +194,31 @@ def clientes_page(page: ft.Page):
                 activo_switch,
             ], tight=True, spacing=8, scroll=ft.ScrollMode.AUTO),
             actions=[
-                ft.TextButton("Cancelar", on_click=lambda e: page.close(dialog)),
+                ft.TextButton("Cancelar", on_click=lambda e: page.pop_dialog()),
                 ft.FilledButton("Guardar", on_click=save),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-        page.open(dialog)
+        page.show_dialog(dialog)
 
     def confirm_delete(cliente):
         def delete(e):
             eliminar_cliente(cliente.id)
             load_clientes()
-            page.snack_bar = ft.SnackBar(ft.Text("Cliente eliminado"), bgcolor=ft.Colors.GREEN)
-            page.snack_bar.open = True
+            show_snack(page, "Cliente eliminado", SUCCESS)
             page.update()
-            page.close(confirm_dialog)
+            page.pop_dialog()
 
         confirm_dialog = ft.AlertDialog(
             title=ft.Text("Confirmar eliminacion"),
             content=ft.Text(f"¿Estas seguro de eliminar a {cliente.nombre}?"),
             actions=[
-                ft.TextButton("Cancelar", on_click=lambda e: page.close(confirm_dialog)),
+                ft.TextButton("Cancelar", on_click=lambda e: page.pop_dialog()),
                 ft.FilledButton("Eliminar", on_click=delete, bgcolor=ft.Colors.RED),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-        page.open(confirm_dialog)
+        page.show_dialog(confirm_dialog)
 
     def on_search_change(e):
         load_clientes(e.control.value)
@@ -214,17 +230,15 @@ def clientes_page(page: ft.Page):
         page.update()
 
     return (ft.Column([
-        ft.Row([
-            ft.Text("Clientes", size=28, weight=ft.FontWeight.BOLD),
-            ft.Container(width=20),
+        page_header(
+            "Clientes",
+            "Administra los datos y el estado de tus clientes.",
             ft.FilledButton(
                 "Nuevo Cliente",
                 icon=ft.Icons.ADD,
                 on_click=lambda e: show_add_dialog(),
             ),
-        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-        ft.Container(height=10),
+        ),
         search_field,
-        ft.Container(height=10),
         clientes_list,
-    ], expand=True, spacing=10), init)
+    ], expand=True, spacing=16), init)

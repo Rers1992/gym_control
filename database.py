@@ -1,5 +1,6 @@
 import firebase_admin
 from firebase_admin import credentials, firestore
+from google.cloud.firestore_v1 import FieldFilter
 from datetime import datetime, timedelta
 from settings_db import get_setting
 import os
@@ -117,7 +118,9 @@ def obtener_membresias():
 def obtener_membresias_por_cliente(cliente_rut):
     from models import Membresia
     cliente_rut = cliente_rut.replace(".", "").replace("-", "").upper() if cliente_rut else None
-    docs = get_membresias_collection().where("cliente_rut", "==", cliente_rut).stream()
+    docs = get_membresias_collection().where(
+        filter=FieldFilter("cliente_rut", "==", cliente_rut)
+    ).stream()
     return [Membresia.from_dict(doc.id, doc.to_dict()) for doc in docs]
 
 
@@ -131,7 +134,9 @@ def eliminar_membresia(membresia_id):
 
 def obtener_membresias_activas():
     from models import Membresia
-    docs = get_membresias_collection().where("activa", "==", True).stream()
+    docs = get_membresias_collection().where(
+        filter=FieldFilter("activa", "==", True)
+    ).stream()
     membresias = [Membresia.from_dict(doc.id, doc.to_dict()) for doc in docs]
     hoy = datetime.now()
     return [m for m in membresias if m.fecha_fin is None or m.fecha_fin >= hoy]
@@ -216,7 +221,9 @@ def calcular_uso_almacenamiento():
 
 def get_alerta_enviada_hoy():
     fecha_hoy = datetime.now().strftime("%Y-%m-%d")
-    docs = get_alertas_collection().where("fecha", "==", fecha_hoy).stream()
+    docs = get_alertas_collection().where(
+        filter=FieldFilter("fecha", "==", fecha_hoy)
+    ).stream()
     for doc in docs:
         return {"id": doc.id, "fecha": doc.get("fecha"), "cantidad": doc.get("cantidad")}
     return None
@@ -224,7 +231,9 @@ def get_alerta_enviada_hoy():
 
 def registrar_alerta_enviada(cantidad):
     fecha_hoy = datetime.now().strftime("%Y-%m-%d")
-    docs = get_alertas_collection().where("fecha", "==", fecha_hoy).stream()
+    docs = get_alertas_collection().where(
+        filter=FieldFilter("fecha", "==", fecha_hoy)
+    ).stream()
     for doc in docs:
         doc.reference.update({"cantidad": cantidad, "enviada_at": datetime.now().isoformat()})
         return

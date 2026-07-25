@@ -8,11 +8,21 @@ from database import (
 )
 from models import Membresia, TipoMembresia
 from settings_db import get_setting
+from ui import (
+    BORDER, DANGER, DANGER_SOFT, PRIMARY, PRIMARY_SOFT, SUCCESS, SUCCESS_SOFT,
+    SURFACE, TEXT, TEXT_MUTED, WARNING, WARNING_SOFT, CARD_SHADOW,
+    empty_state, page_header, show_snack, status_badge,
+)
 
 
 def membresias_page(page: ft.Page):
     filter_dropdown = ft.Dropdown(
         label="Filtrar por estado",
+        width=220,
+        bgcolor=SURFACE,
+        border_color=BORDER,
+        focused_border_color=PRIMARY,
+        border_radius=10,
         options=[
             ft.dropdown.Option("todas", "Todas"),
             ft.dropdown.Option("activas", "Activas"),
@@ -26,58 +36,67 @@ def membresias_page(page: ft.Page):
     tipos_list = ft.ListView(spacing=8, expand=True)
 
     btn_tipos = ft.Container(
-        content=ft.Text("Tipos de Membresía", size=14, weight=ft.FontWeight.BOLD),
-        padding=15,
-        bgcolor=ft.Colors.BLUE_GREY_100,
-        border_radius=10,
+        content=ft.Row([
+            ft.Icon(ft.Icons.CREDIT_CARD, size=18, color=PRIMARY),
+            ft.Text("Tipos de membresía", size=13, weight=ft.FontWeight.W_600, color=TEXT),
+        ], spacing=7),
+        padding=ft.Padding.symmetric(horizontal=16, vertical=11),
+        bgcolor=PRIMARY_SOFT,
+        border=ft.Border.all(1, BORDER),
+        border_radius=12,
+        ink=True,
     )
     btn_asignaciones = ft.Container(
-        content=ft.Text("Asignaciones", size=14, weight=ft.FontWeight.BOLD),
-        padding=15,
-        bgcolor=ft.Colors.WHITE,
-        border_radius=10,
+        content=ft.Row([
+            ft.Icon(ft.Icons.ASSIGNMENT_IND, size=18, color=PRIMARY),
+            ft.Text("Asignaciones", size=13, weight=ft.FontWeight.W_600, color=TEXT),
+        ], spacing=7),
+        padding=ft.Padding.symmetric(horizontal=16, vertical=11),
+        bgcolor=SURFACE,
+        border=ft.Border.all(1, BORDER),
+        border_radius=12,
+        ink=True,
     )
 
     tipos_content = ft.Column([
-        ft.Row([
-            ft.Text("Tipos de Membresía", size=28, weight=ft.FontWeight.BOLD),
-            ft.Container(width=20),
+        page_header(
+            "Tipos de membresía",
+            "Define los planes, su duración y precio base.",
             ft.FilledButton(
                 "Nuevo Tipo",
+                icon=ft.Icons.ADD,
                 on_click=lambda e: show_add_tipo_dialog(),
             ),
-        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-        ft.Container(height=10),
+        ),
         tipos_list,
-    ], expand=True, spacing=10)
+    ], expand=True, spacing=16)
 
     asignaciones_content = ft.Column([
-        ft.Row([
-            ft.Text("Asignaciones", size=28, weight=ft.FontWeight.BOLD),
-            ft.Container(width=20),
+        page_header(
+            "Asignaciones",
+            "Revisa y administra los planes asociados a clientes.",
             ft.FilledButton(
                 "Asignar Membresía",
+                icon=ft.Icons.ADD,
                 on_click=lambda e: show_add_dialog(),
             ),
-        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-        ft.Container(height=10),
+        ),
         ft.Row([filter_dropdown], alignment=ft.MainAxisAlignment.START),
-        ft.Container(height=10),
         membresias_list,
-    ], expand=True, spacing=10)
+    ], expand=True, spacing=16)
 
     content_container = ft.Container(expand=True)
 
     def show_tipos(e=None):
-        btn_tipos.bgcolor = ft.Colors.BLUE_GREY_100
-        btn_asignaciones.bgcolor = ft.Colors.WHITE
+        btn_tipos.bgcolor = PRIMARY_SOFT
+        btn_asignaciones.bgcolor = SURFACE
         content_container.content = tipos_content
         load_tipos()
         page.update()
 
     def show_asignaciones(e=None):
-        btn_tipos.bgcolor = ft.Colors.WHITE
-        btn_asignaciones.bgcolor = ft.Colors.BLUE_GREY_100
+        btn_tipos.bgcolor = SURFACE
+        btn_asignaciones.bgcolor = PRIMARY_SOFT
         content_container.content = asignaciones_content
         load_membresias()
         page.update()
@@ -143,21 +162,19 @@ def membresias_page(page: ft.Page):
                         ]),
                     ], spacing=8),
                     padding=15,
-                    bgcolor=ft.Colors.WHITE,
-                    border_radius=10,
-                    shadow=ft.BoxShadow(blur_radius=5, color=ft.Colors.with_opacity(0.1, ft.Colors.BLACK)),
+                    bgcolor=SURFACE,
+                    border=ft.Border.all(1, BORDER),
+                    border_radius=12,
+                    shadow=CARD_SHADOW,
                 )
             )
 
         if not tipos_list.controls:
             tipos_list.controls.append(
-                ft.Container(
-                    content=ft.Column([
-                        ft.Icon(ft.Icons.CREDIT_CARD, size=60, color=ft.Colors.GREY_400),
-                        ft.Text("No hay tipos de membresía", size=16, color=ft.Colors.GREY_600),
-                        ft.Text("Crea los tipos de membresía primero", size=12, color=ft.Colors.GREY_500),
-                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-                    padding=40,
+                empty_state(
+                    ft.Icons.CREDIT_CARD,
+                    "No hay tipos de membresía",
+                    "Crea tu primer plan para comenzar a asignarlo.",
                 )
             )
 
@@ -171,8 +188,7 @@ def membresias_page(page: ft.Page):
 
         def save(e):
             if not nombre_field.value or not precio_field.value:
-                page.snack_bar = ft.SnackBar(ft.Text("Nombre y precio son obligatorios"), bgcolor=ft.Colors.RED)
-                page.snack_bar.open = True
+                show_snack(page, "Nombre y precio son obligatorios", DANGER)
                 page.update()
                 return
 
@@ -194,10 +210,9 @@ def membresias_page(page: ft.Page):
             )
             crear_tipo_membresia(tipo)
             load_tipos()
-            page.snack_bar = ft.SnackBar(ft.Text("Tipo de membresía creado"), bgcolor=ft.Colors.GREEN)
-            page.snack_bar.open = True
+            show_snack(page, "Tipo de membresía creado", SUCCESS)
             page.update()
-            page.close(dialog)
+            page.pop_dialog()
 
         dialog = ft.AlertDialog(
             title=ft.Text("Nuevo Tipo de Membresía"),
@@ -207,12 +222,12 @@ def membresias_page(page: ft.Page):
                 descripcion_field,
             ], tight=True, spacing=12, scroll=ft.ScrollMode.AUTO),
             actions=[
-                ft.TextButton("Cancelar", on_click=lambda e: page.close(dialog)),
+                ft.TextButton("Cancelar", on_click=lambda e: page.pop_dialog()),
                 ft.FilledButton("Guardar", on_click=save),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-        page.open(dialog)
+        page.show_dialog(dialog)
 
     def show_edit_tipo_dialog(tipo):
         nombre_field = ft.TextField(label="Nombre", value=tipo.nombre, expand=True)
@@ -222,8 +237,7 @@ def membresias_page(page: ft.Page):
 
         def save(e):
             if not nombre_field.value or not precio_field.value:
-                page.snack_bar = ft.SnackBar(ft.Text("Nombre y precio son obligatorios"), bgcolor=ft.Colors.RED)
-                page.snack_bar.open = True
+                show_snack(page, "Nombre y precio son obligatorios", DANGER)
                 page.update()
                 return
 
@@ -244,10 +258,9 @@ def membresias_page(page: ft.Page):
                 "descripcion": descripcion_field.value,
             })
             load_tipos()
-            page.snack_bar = ft.SnackBar(ft.Text("Tipo de membresía actualizado"), bgcolor=ft.Colors.GREEN)
-            page.snack_bar.open = True
+            show_snack(page, "Tipo de membresía actualizado", SUCCESS)
             page.update()
-            page.close(dialog)
+            page.pop_dialog()
 
         dialog = ft.AlertDialog(
             title=ft.Text("Editar Tipo de Membresía"),
@@ -257,38 +270,36 @@ def membresias_page(page: ft.Page):
                 descripcion_field,
             ], tight=True, spacing=12, scroll=ft.ScrollMode.AUTO),
             actions=[
-                ft.TextButton("Cancelar", on_click=lambda e: page.close(dialog)),
+                ft.TextButton("Cancelar", on_click=lambda e: page.pop_dialog()),
                 ft.FilledButton("Guardar", on_click=save),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-        page.open(dialog)
+        page.show_dialog(dialog)
 
     def confirm_delete_tipo(tipo):
         def delete(e):
             eliminar_tipo_membresia(tipo.id)
             load_tipos()
-            page.snack_bar = ft.SnackBar(ft.Text("Tipo de membresía eliminado"), bgcolor=ft.Colors.GREEN)
-            page.snack_bar.open = True
+            show_snack(page, "Tipo de membresía eliminado", SUCCESS)
             page.update()
-            page.close(confirm_dialog)
+            page.pop_dialog()
 
         confirm_dialog = ft.AlertDialog(
             title=ft.Text("Confirmar eliminación"),
             content=ft.Text(f"¿Eliminar el tipo '{tipo.nombre}'?"),
             actions=[
-                ft.TextButton("Cancelar", on_click=lambda e: page.close(confirm_dialog)),
+                ft.TextButton("Cancelar", on_click=lambda e: page.pop_dialog()),
                 ft.FilledButton("Eliminar", on_click=delete, bgcolor=ft.Colors.RED),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-        page.open(confirm_dialog)
+        page.show_dialog(confirm_dialog)
 
     def load_membresias():
         membresias_list.controls.clear()
         membresias = obtener_membresias()
         filtro = filter_dropdown.value
-        hoy = datetime.now()
 
         for m in membresias:
             dias = m.dias_restantes()
@@ -314,19 +325,24 @@ def membresias_page(page: ft.Page):
                 plan_color = ft.Colors.GREY
 
             status_text = ""
-            status_color = ft.Colors.GREEN
+            status_color = SUCCESS
+            status_background = SUCCESS_SOFT
             if esta_vencida:
-                status_text = f"Vencida (hace {abs(dias) if dias is not None else 0} dias)"
-                status_color = ft.Colors.RED
+                status_text = f"Vencida hace {abs(dias) if dias is not None else 0} días"
+                status_color = DANGER
+                status_background = DANGER_SOFT
             elif esta_por_vencer:
-                status_text = f"Por vencer ({dias} dias)"
-                status_color = ft.Colors.ORANGE
+                status_text = f"Por vencer en {dias} días"
+                status_color = WARNING
+                status_background = WARNING_SOFT
             elif dias is not None:
-                status_text = f"{dias} dias restantes"
-                status_color = ft.Colors.GREEN
+                status_text = f"{dias} días restantes"
+                status_color = SUCCESS
+                status_background = SUCCESS_SOFT
             else:
-                status_text = "Sin fecha limite"
-                status_color = ft.Colors.BLUE
+                status_text = "Sin fecha límite"
+                status_color = PRIMARY
+                status_background = PRIMARY_SOFT
 
             membresias_list.controls.append(
                 ft.Container(
@@ -339,19 +355,16 @@ def membresias_page(page: ft.Page):
                                 border_radius=8,
                             ),
                             ft.Column([
-                                ft.Text(nombre_cliente, weight=ft.FontWeight.BOLD, size=16),
+                                ft.Text(nombre_cliente, weight=ft.FontWeight.W_600, size=16, color=TEXT),
                                 ft.Text(
-                                    f"Inicio: {m.fecha_inicio.strftime('%d/%m/%Y')} | Fin: {m.fecha_fin.strftime('%d/%m/%Y') if m.fecha_fin else 'N/A'}",
-                                    size=12, color=ft.Colors.GREY_600,
+                                    f"Inicio: {m.fecha_inicio.strftime('%d/%m/%Y')}  ·  Fin: {m.fecha_fin.strftime('%d/%m/%Y') if m.fecha_fin else 'Sin límite'}",
+                                    size=11, color=TEXT_MUTED,
                                 ),
                             ], spacing=2, expand=True),
-                            ft.Chip(
-                                label=ft.Text(status_text, size=11),
-                                color=status_color,
-                            ),
+                            status_badge(status_text, status_color, status_background),
                         ]),
                         ft.Row([
-                            ft.Text(f"${m.precio:,.0f}", weight=ft.FontWeight.BOLD, size=18, color=ft.Colors.GREEN),
+                            ft.Text(f"${m.precio:,.0f}", weight=ft.FontWeight.BOLD, size=18, color=SUCCESS),
                             ft.Container(expand=True),
                             ft.Row([
                                 ft.IconButton(
@@ -369,21 +382,19 @@ def membresias_page(page: ft.Page):
                         ]),
                     ], spacing=8),
                     padding=15,
-                    bgcolor=ft.Colors.WHITE,
-                    border_radius=10,
-                    shadow=ft.BoxShadow(blur_radius=5, color=ft.Colors.with_opacity(0.1, ft.Colors.BLACK)),
+                    bgcolor=SURFACE,
+                    border=ft.Border.all(1, BORDER),
+                    border_radius=12,
+                    shadow=CARD_SHADOW,
                 )
             )
 
         if not membresias_list.controls:
             membresias_list.controls.append(
-                ft.Container(
-                    content=ft.Column([
-                        ft.Icon(ft.Icons.FITNESS_CENTER, size=60, color=ft.Colors.GREY_400),
-                        ft.Text("No hay membresías asignadas", size=16, color=ft.Colors.GREY_600),
-                        ft.Text("Asigna una membresía a un cliente", size=12, color=ft.Colors.GREY_500),
-                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-                    padding=40,
+                empty_state(
+                    ft.Icons.FITNESS_CENTER,
+                    "No hay membresías asignadas",
+                    "Asigna un plan a un cliente para verlo aquí.",
                 )
             )
 
@@ -392,15 +403,13 @@ def membresias_page(page: ft.Page):
     def show_add_dialog():
         clientes = obtener_clientes()
         if not clientes:
-            page.snack_bar = ft.SnackBar(ft.Text("Primero debes registrar un cliente"), bgcolor=ft.Colors.ORANGE)
-            page.snack_bar.open = True
+            show_snack(page, "Primero debes registrar un cliente", WARNING)
             page.update()
             return
 
         tipos = obtener_tipos_membresia()
         if not tipos:
-            page.snack_bar = ft.SnackBar(ft.Text("Primero crea un tipo de membresía"), bgcolor=ft.Colors.ORANGE)
-            page.snack_bar.open = True
+            show_snack(page, "Primero crea un tipo de membresía", WARNING)
             page.update()
             return
 
@@ -408,15 +417,19 @@ def membresias_page(page: ft.Page):
             label="Cliente",
             hint_text="Buscar por nombre o RUT...",
             autofocus=True,
+            prefix_icon=ft.Icons.PERSON_SEARCH,
+            border_color=BORDER,
+            focused_border_color=PRIMARY,
+            border_radius=10,
         )
 
         sugerencias_list = ft.ListView(height=120, spacing=2, visible=False)
 
         sugerencias_container = ft.Container(
             content=sugerencias_list,
-            border=ft.border.all(1, ft.Colors.GREY_400),
-            border_radius=ft.border_radius.all(5),
-            bgcolor=ft.Colors.WHITE,
+            border=ft.Border.all(1, BORDER),
+            border_radius=ft.BorderRadius.all(10),
+            bgcolor=SURFACE,
             clip_behavior=ft.ClipBehavior.HARD_EDGE,
         )
 
@@ -467,8 +480,8 @@ def membresias_page(page: ft.Page):
             last_date=datetime(2030, 12, 31),
         )
         fecha_inicio_btn = ft.IconButton(
-            icon=ft.icons.CALENDAR_MONTH,
-            on_click=lambda e: page.open(fecha_inicio_picker),
+            icon=ft.Icons.CALENDAR_MONTH,
+            on_click=lambda e: page.show_dialog(fecha_inicio_picker),
         )
         fecha_inicio_picker.on_change = lambda e: (
             setattr(fecha_inicio_field, 'value', e.control.value.strftime("%Y-%m-%d")),
@@ -503,8 +516,8 @@ def membresias_page(page: ft.Page):
             last_date=datetime(2030, 12, 31),
         )
         fecha_fin_btn = ft.IconButton(
-            icon=ft.icons.CALENDAR_MONTH,
-            on_click=lambda e: page.open(fecha_fin_picker),
+            icon=ft.Icons.CALENDAR_MONTH,
+            on_click=lambda e: page.show_dialog(fecha_fin_picker),
         )
         fecha_fin_picker.on_change = lambda e: (
             setattr(fecha_fin_field, 'value', e.control.value.strftime("%Y-%m-%d") if e.control.value else ""),
@@ -528,16 +541,14 @@ def membresias_page(page: ft.Page):
             texto = cliente_field.value or ""
             cliente_seleccionado = next((c for c in clientes if f"{c.nombre} ({c.id})" == texto), None)
             if not cliente_seleccionado or not tipo_dropdown.value:
-                page.snack_bar = ft.SnackBar(ft.Text("Selecciona un cliente válido y el tipo de membresía"), bgcolor=ft.Colors.RED)
-                page.snack_bar.open = True
+                show_snack(page, "Selecciona un cliente válido y el tipo de membresía", DANGER)
                 page.update()
                 return
 
             cliente_rut = cliente_seleccionado.id
             tipo = obtener_tipo_membresia(tipo_dropdown.value)
             if not tipo:
-                page.snack_bar = ft.SnackBar(ft.Text("Tipo de membresía no válido"), bgcolor=ft.Colors.RED)
-                page.snack_bar.open = True
+                show_snack(page, "Tipo de membresía no válido", DANGER)
                 page.update()
                 return
 
@@ -554,10 +565,9 @@ def membresias_page(page: ft.Page):
             )
             crear_membresia(membresia)
             load_membresias()
-            page.snack_bar = ft.SnackBar(ft.Text("Membresía asignada exitosamente"), bgcolor=ft.Colors.GREEN)
-            page.snack_bar.open = True
+            show_snack(page, "Membresía asignada exitosamente", SUCCESS)
             page.update()
-            page.close(dialog)
+            page.pop_dialog()
 
         dialog = ft.AlertDialog(
             title=ft.Text("Asignar Membresía"),
@@ -572,12 +582,12 @@ def membresias_page(page: ft.Page):
                 notas_field,
             ], tight=True, spacing=12, scroll=ft.ScrollMode.AUTO),
             actions=[
-                ft.TextButton("Cancelar", on_click=lambda e: page.close(dialog)),
+                ft.TextButton("Cancelar", on_click=lambda e: page.pop_dialog()),
                 ft.FilledButton("Guardar", on_click=save),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-        page.open(dialog)
+        page.show_dialog(dialog)
 
     def show_edit_dialog(membresia):
         clientes = obtener_clientes()
@@ -609,8 +619,8 @@ def membresias_page(page: ft.Page):
             last_date=datetime(2030, 12, 31),
         )
         fecha_inicio_btn = ft.IconButton(
-            icon=ft.icons.CALENDAR_MONTH,
-            on_click=lambda e: page.open(fecha_inicio_picker),
+            icon=ft.Icons.CALENDAR_MONTH,
+            on_click=lambda e: page.show_dialog(fecha_inicio_picker),
         )
         fecha_inicio_picker.on_change = lambda e: (
             setattr(fecha_inicio_field, 'value', e.control.value.strftime("%Y-%m-%d")),
@@ -629,8 +639,8 @@ def membresias_page(page: ft.Page):
             last_date=datetime(2030, 12, 31),
         )
         fecha_fin_btn = ft.IconButton(
-            icon=ft.icons.CALENDAR_MONTH,
-            on_click=lambda e: page.open(fecha_fin_picker),
+            icon=ft.Icons.CALENDAR_MONTH,
+            on_click=lambda e: page.show_dialog(fecha_fin_picker),
         )
         fecha_fin_picker.on_change = lambda e: (
             setattr(fecha_fin_field, 'value', e.control.value.strftime("%Y-%m-%d") if e.control.value else ""),
@@ -642,8 +652,7 @@ def membresias_page(page: ft.Page):
 
         def save(e):
             if not cliente_dropdown.value or not tipo_dropdown.value:
-                page.snack_bar = ft.SnackBar(ft.Text("Cliente y tipo de membresía son obligatorios"), bgcolor=ft.Colors.RED)
-                page.snack_bar.open = True
+                show_snack(page, "Cliente y tipo de membresía son obligatorios", DANGER)
                 page.update()
                 return
 
@@ -663,10 +672,9 @@ def membresias_page(page: ft.Page):
                 "notas": notas_field.value,
             })
             load_membresias()
-            page.snack_bar = ft.SnackBar(ft.Text("Membresía actualizada"), bgcolor=ft.Colors.GREEN)
-            page.snack_bar.open = True
+            show_snack(page, "Membresía actualizada", SUCCESS)
             page.update()
-            page.close(dialog)
+            page.pop_dialog()
 
         dialog = ft.AlertDialog(
             title=ft.Text("Editar Membresía"),
@@ -681,46 +689,46 @@ def membresias_page(page: ft.Page):
                 notas_field,
             ], tight=True, spacing=12, scroll=ft.ScrollMode.AUTO),
             actions=[
-                ft.TextButton("Cancelar", on_click=lambda e: page.close(dialog)),
+                ft.TextButton("Cancelar", on_click=lambda e: page.pop_dialog()),
                 ft.FilledButton("Guardar", on_click=save),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-        page.open(dialog)
+        page.show_dialog(dialog)
 
     def confirm_delete(membresia):
         def delete(e):
             eliminar_membresia(membresia.id)
             load_membresias()
-            page.snack_bar = ft.SnackBar(ft.Text("Membresía eliminada"), bgcolor=ft.Colors.GREEN)
-            page.snack_bar.open = True
+            show_snack(page, "Membresía eliminada", SUCCESS)
             page.update()
-            page.close(confirm_dialog)
+            page.pop_dialog()
 
         confirm_dialog = ft.AlertDialog(
             title=ft.Text("Confirmar eliminación"),
             content=ft.Text("¿Eliminar esta membresía?"),
             actions=[
-                ft.TextButton("Cancelar", on_click=lambda e: page.close(confirm_dialog)),
+                ft.TextButton("Cancelar", on_click=lambda e: page.pop_dialog()),
                 ft.FilledButton("Eliminar", on_click=delete, bgcolor=ft.Colors.RED),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
-        page.open(confirm_dialog)
+        page.show_dialog(confirm_dialog)
 
     filter_dropdown.on_change = lambda e: load_membresias()
 
     def init():
         content_container.content = tipos_content
-        btn_tipos.bgcolor = ft.Colors.BLUE_GREY_100
-        btn_asignaciones.bgcolor = ft.Colors.WHITE
+        btn_tipos.bgcolor = PRIMARY_SOFT
+        btn_asignaciones.bgcolor = SURFACE
         load_tipos()
         page.update()
 
     return (ft.Column([
-        ft.Text("Membresías", size=28, weight=ft.FontWeight.BOLD),
-        ft.Container(height=10),
+        page_header(
+            "Membresías",
+            "Crea planes y controla sus asignaciones.",
+        ),
         ft.Row([btn_tipos, btn_asignaciones], spacing=10),
-        ft.Container(height=10),
         content_container,
-    ], expand=True, spacing=10), init)
+    ], expand=True, spacing=16), init)
